@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Video Tool - YouTube Content Automation</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .progress-ring {
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+        .dropzone {
+            border: 2px dashed #cbd5e0;
+            transition: all 0.3s ease;
+        }
+        .dropzone.dragover {
+            border-color: #4299e1;
+            background-color: #ebf8ff;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <i class="fas fa-video text-blue-600 text-2xl mr-3"></i>
+                    <h1 class="text-xl font-bold text-gray-900">AI Video Tool</h1>
+                    <a href="/static/index.html" class="ml-6 text-gray-500 hover:text-blue-600">Home</a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="api-key-btn" class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
+                        <i class="fas fa-key mr-2"></i>API Key
+                    </button>
+                    <div id="user-menu" class="hidden">
+                        <span class="text-gray-700 mr-3">Welcome, <span id="username"></span></span>
+                        <button id="logout-btn" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">
+                            Logout
+                        </button>
+                    </div>
+                    <div id="auth-buttons">
+                        <button id="login-btn" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                            Login
+                        </button>
+                        <button id="register-btn" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
+                            Register
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Tabs -->
+        <div class="bg-white rounded-lg shadow-md mb-6">
+            <div class="border-b border-gray-200">
+                <nav class="-mb-px flex">
+                    <button class="tab-btn active py-2 px-6 border-b-2 border-blue-500 font-medium text-blue-600" data-tab="ai-images">
+                        <i class="fas fa-image mr-2"></i>AI Image Generator
+                    </button>
+                    <button class="tab-btn py-2 px-6 border-b-2 border-transparent font-medium text-gray-600 hover:text-gray-800" data-tab="broll">
+                        <i class="fas fa-film mr-2"></i>B-Roll Reorganizer
+                    </button>
+                    <button class="tab-btn py-2 px-6 border-b-2 border-transparent font-medium text-gray-600 hover:text-gray-800" data-tab="jobs">
+                        <i class="fas fa-tasks mr-2"></i>My Jobs
+                    </button>
+                </nav>
+            </div>
+        </div>
+
+        <!-- AI Images Tab -->
+        <div id="ai-images" class="tab-content active">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Upload Section -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- Script Upload -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h3 class="text-lg font-semibold mb-4">📄 Upload Script</h3>
+                        <div class="dropzone p-8 rounded-lg text-center" id="script-dropzone">
+                            <i class="fas fa-file-alt text-4xl text-gray-400 mb-4"></i>
+                            <p class="text-gray-600 mb-2">Drop your script file here or click to browse</p>
+                            <p class="text-sm text-gray-500">Supports .txt and .docx files</p>
+                            <input type="file" id="script-file" class="hidden" accept=".txt,.docx">
+                        </div>
+                        <div id="script-info" class="hidden mt-4 p-4 bg-green-50 rounded-lg">
+                            <p class="text-green-800"><i class="fas fa-check-circle mr-2"></i><span id="script-filename"></span></p>
+                        </div>
+                    </div>
+
+                    <!-- Voiceover Upload -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h3 class="text-lg font-semibold mb-4">🎙️ Upload Voiceover</h3>
+                        <div class="dropzone p-8 rounded-lg text-center" id="voice-dropzone">
+                            <i class="fas fa-microphone text-4xl text-gray-400 mb-4"></i>
+                            <p class="text-gray-600 mb-2">Drop your voiceover file here or click to browse</p>
+                            <p class="text-sm text-gray-500">Supports .mp3, .wav, .m4a files</p>
+                            <input type="file" id="voice-file" class="hidden" accept=".mp3,.wav,.m4a">
+                        </div>
+                        <div id="voice-info" class="hidden mt-4 p-4 bg-green-50 rounded-lg">
+                            <p class="text-green-800"><i class="fas fa-check-circle mr-2"></i><span id="voice-filename"></span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Section -->
+                <div class="space-y-6">
+                    <!-- Generation Settings -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h3 class="text-lg font-semibold mb-4">⚙️ Generation Settings</h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Number of Images</label>
+                                <input type="number" id="image-count" value="5" min="1" max="20" class="w-full px-3 py-2 border rounded-lg">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Image Style</label>
+                                <select id="image-style" class="w-full px-3 py-2 border rounded-lg">
+                                    <option value="Photorealistic">Photorealistic</option>
+                                    <option value="Cinematic">Cinematic</option>
+                                    <option value="Anime/Manga">Anime/Manga</option>
+                                    <option value="3D Render">3D Render</option>
+                                    <option value="Oil Painting">Oil Painting</option>
+                                    <option value="Watercolor">Watercolor</option>
+                                    <option value="Comic Book">Comic Book</option>
+                                    <option value="Digital Art">Digital Art</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Character Description</label>
+                                <textarea id="character-desc" rows="4" class="w-full px-3 py-2 border rounded-lg" 
+                                    placeholder="Describe your main character(s) in detail..."></textarea>
+                            </div>
+
+                            <div class="space-y-2">
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="export-images" checked class="mr-2">
+                                    <span class="text-sm">Export Still Images</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="export-clips" checked class="mr-2">
+                                    <span class="text-sm">Export Video Clips</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="export-full-video" class="mr-2">
+                                    <span class="text-sm">Create Full Video</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <button id="generate-btn" class="w-full mt-6 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50" disabled>
+                            <i class="fas fa-magic mr-2"></i>Generate AI Images
+                        </button>
+                    </div>
+
+                    <!-- Progress Section -->
+                    <div id="ai-progress-section" class="bg-white rounded-lg shadow-md p-6 hidden">
+                        <h3 class="text-lg font-semibold mb-4">Progress</h3>
+                        <div class="relative pt-1">
+                            <div class="flex mb-2 items-center justify-between">
+                                <div>
+                                    <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blue-600 bg-blue-200">
+                                        <span id="ai-progress-percent">0</span>%
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-blue-200">
+                                <div id="ai-progress-bar" style="width:0%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-600 transition-all duration-500"></div>
+                            </div>
+                        </div>
+                        <div id="ai-status" class="text-sm text-gray-600"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview Section -->
+            <div id="ai-preview-section" class="mt-6 bg-white rounded-lg shadow-md p-6 hidden">
+                <h3 class="text-lg font-semibold mb-4">🖼️ Generated Images Preview</h3>
+                <div id="ai-preview-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <!-- Images will be added here dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- B-Roll Tab -->
+        <div id="broll" class="tab-content">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Upload Section -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- B-Roll Upload -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h3 class="text-lg font-semibold mb-4">🎥 Upload B-Roll Clips</h3>
+                        <div class="dropzone p-8 rounded-lg text-center" id="broll-dropzone">
+                            <i class="fas fa-video text-4xl text-gray-400 mb-4"></i>
+                            <p class="text-gray-600 mb-2">Drop your B-roll clips here or click to browse</p>
+                            <p class="text-sm text-gray-500">Supports multiple .mp4, .avi, .mov, .mkv files</p>
+                            <input type="file" id="broll-files" class="hidden" accept=".mp4,.avi,.mov,.mkv" multiple>
+                        </div>
+                        <div id="broll-list" class="mt-4 space-y-2"></div>
+                    </div>
+
+                    <!-- Intro Clips Upload -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h3 class="text-lg font-semibold mb-4">🎬 Upload Intro Clips (Optional)</h3>
+                        <div class="dropzone p-8 rounded-lg text-center" id="intro-dropzone">
+                            <i class="fas fa-film text-4xl text-gray-400 mb-4"></i>
+                            <p class="text-gray-600 mb-2">Drop your intro clips here or click to browse</p>
+                            <p class="text-sm text-gray-500">These will play before the B-roll</p>
+                            <input type="file" id="intro-files" class="hidden" accept=".mp4,.avi,.mov,.mkv" multiple>
+                        </div>
+                        <div id="intro-list" class="mt-4 space-y-2"></div>
+                    </div>
+
+                    <!-- Voiceover Upload -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h3 class="text-lg font-semibold mb-4">🎧 Upload Voiceover (Optional)</h3>
+                        <div class="dropzone p-8 rounded-lg text-center" id="broll-voice-dropzone">
+                            <i class="fas fa-headphones text-4xl text-gray-400 mb-4"></i>
+                            <p class="text-gray-600 mb-2">Drop your voiceover file here or click to browse</p>
+                            <p class="text-sm text-gray-500">The video will sync to this audio</p>
+                            <input type="file" id="broll-voice-file" class="hidden" accept=".mp3,.wav,.m4a">
+                        </div>
+                        <div id="broll-voice-info" class="hidden mt-4 p-4 bg-green-50 rounded-lg">
+                            <p class="text-green-800"><i class="fas fa-check-circle mr-2"></i><span id="broll-voice-filename"></span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Section -->
+                <div class="space-y-6">
+                    <!-- Organization Settings -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h3 class="text-lg font-semibold mb-4">⚙️ Organization Settings</h3>
+                        
+                        <div class="space-y-4">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="sync-duration" checked class="mr-2">
+                                <span class="text-sm">Sync video to voiceover length</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="overlay-audio" checked class="mr-2">
+                                <span class="text-sm">Overlay voiceover on final video</span>
+                            </label>
+                        </div>
+
+                        <button id="organize-btn" class="w-full mt-6 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50" disabled>
+                            <i class="fas fa-random mr-2"></i>Reorganize B-Roll
+                        </button>
+                    </div>
+
+                    <!-- Progress Section -->
+                    <div id="broll-progress-section" class="bg-white rounded-lg shadow-md p-6 hidden">
+                        <h3 class="text-lg font-semibold mb-4">Progress</h3>
+                        <div class="relative pt-1">
+                            <div class="flex mb-2 items-center justify-between">
+                                <div>
+                                    <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-green-600 bg-green-200">
+                                        <span id="broll-progress-percent">0</span>%
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-green-200">
+                                <div id="broll-progress-bar" style="width:0%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-green-600 transition-all duration-500"></div>
+                            </div>
+                        </div>
+                        <div id="broll-status" class="text-sm text-gray-600"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Jobs Tab -->
+        <div id="jobs" class="tab-content">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold mb-4">📋 Job History</h3>
+                <div id="jobs-list" class="space-y-4">
+                    <!-- Jobs will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Login Modal -->
+    <div id="login-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <h3 class="text-lg font-semibold mb-4">Login</h3>
+            <form id="login-form">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                    <input type="text" name="username" required class="w-full px-3 py-2 border rounded-lg">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" name="password" required class="w-full px-3 py-2 border rounded-lg">
+                </div>
+                <div class="flex justify-between items-center space-x-2">
+                    <a href="/static/index.html" class="text-xs text-gray-400 hover:text-gray-600">&larr; Home</a>
+                    <div class="flex space-x-2">
+                        <button type="button" class="px-4 py-2 bg-gray-300 rounded-lg" onclick="closeModal('login-modal')">Cancel</button>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg">Login</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div id="register-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <h3 class="text-lg font-semibold mb-4">Register</h3>
+            <form id="register-form">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" name="email" required class="w-full px-3 py-2 border rounded-lg">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                    <input type="text" name="username" required class="w-full px-3 py-2 border rounded-lg">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" name="password" required class="w-full px-3 py-2 border rounded-lg">
+                </div>
+                <div class="flex justify-between items-center space-x-2">
+                    <a href="/static/index.html" class="text-xs text-gray-400 hover:text-gray-600">&larr; Home</a>
+                    <div class="flex space-x-2">
+                        <button type="button" class="px-4 py-2 bg-gray-300 rounded-lg" onclick="closeModal('register-modal')">Cancel</button>
+                        <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg">Register</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- API Key Modal -->
+    <div id="api-key-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <h3 class="text-lg font-semibold mb-4">Set OpenAI API Key</h3>
+            <form id="api-key-form">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
+                    <input type="password" name="api_key" required class="w-full px-3 py-2 border rounded-lg" placeholder="sk-...">
+                    <p class="text-xs text-gray-500 mt-1">Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank" class="text-blue-600">OpenAI</a></p>
+                </div>
+                <div class="flex justify-end space-x-2">
+                    <button type="button" class="px-4 py-2 bg-gray-300 rounded-lg" onclick="closeModal('api-key-modal')">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+    <script>
+      // Fallback tab switching logic
+      document.addEventListener('DOMContentLoaded', function() {
+        var tabBtns = document.querySelectorAll('.tab-btn');
+        var tabContents = document.querySelectorAll('.tab-content');
+        tabBtns.forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            var tab = btn.getAttribute('data-tab');
+            tabBtns.forEach(function(b) { b.classList.remove('active', 'border-blue-500', 'text-blue-600'); b.classList.add('border-transparent', 'text-gray-600'); });
+            btn.classList.add('active', 'border-blue-500', 'text-blue-600'); btn.classList.remove('border-transparent', 'text-gray-600');
+            tabContents.forEach(function(tc) { tc.classList.remove('active'); });
+            var activeTab = document.getElementById(tab);
+            if (activeTab) activeTab.classList.add('active');
+          });
+        });
+      });
+    </script>
+</body>
+</html>
